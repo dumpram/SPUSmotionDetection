@@ -1,0 +1,178 @@
+<!-- DOCTYPE html -->
+<html lang="en">
+<head>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="jquery-1.10.2.js"></script>
+    <script src="jquery-ui.js"></script>
+    <script src="jquery/iphone-style-checkboxes.js"></script>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="jquery-ui.css">
+    <% include ../partials/head %>
+    <script type="text/javascript">
+        var socket = io.connect();
+        var colorAlarmInterval;
+        var soundAlarmInterval;
+        var alarmState = false;
+        socket.on('data', function(data) {
+            $("#stream").attr('src', 'data:image/jpeg;base64,' + data.toString('ascii'));			
+        });
+        
+        socket.on('enableStream', function(data) {
+            $("#enableStream").prop("checked", data);
+            $("#enableStream").iphoneStyle("refresh");
+        });
+        
+        socket.on('enableMorph', function(data) {
+            $("#enableMorph").prop("checked", data);
+            $("#enableMorph").iphoneStyle("refresh");
+        });
+        
+        socket.on('enableContours', function(data) {
+            $("#enableContours").prop("checked", data);
+            $("#enableContours").iphoneStyle("refresh");
+        });
+        
+        socket.on('enableMask', function(data) {
+            $("#enableMask").prop("checked", data);
+            $("#enableMask").iphoneStyle("refresh");
+        });
+        
+        socket.on('varianceParam', function(data) {
+            $("#varianceParam").slider({
+               value: data 
+            });
+            $("#varianceValue").text($("#varianceParam").slider("value"));
+        });
+        
+        socket.on('alarm', function(data) {
+            if (data && !alarmState) {
+                $('body').css({"background-color":"red"});
+                colorAlarmInterval = setInterval(colorAlarm, 500);
+                audioAlarm();
+                audioAlarmInterval = setInterval(audioAlarm, 1200);
+                alarmState = true;
+                $("#alarmSwitch").prop("checked", data);
+                $("#alarmSwitch").iphoneStyle("refresh");
+            }
+        });
+        
+        function audioAlarm() {
+            var audioElement = document.createElement('audio');
+            audioElement.setAttribute('src', 'alarm.mp3');
+            audioElement.setAttribute('autoplay', 'autoplay');
+            //audioElement.load()
+
+            $.get();
+
+            audioElement.addEventListener("load", function() {
+                audioElement.play();
+            }, true);
+        }
+        
+        function colorAlarm() {
+            var x = $('body').css("background-color");
+            if (x != 'rgb(255, 0, 0)') {
+                $('body').css({"background-color":"red"});
+            } else {
+                $('body').css({"background-color":"#aabbcc"});
+            }
+        }
+        
+        $(document).ready(function() {
+            $("#alarmSwitch").iphoneStyle({
+                onChange: function (elem, value) {
+                    alarmState = false;
+                    clearInterval(audioAlarmInterval);
+                    clearInterval(colorAlarmInterval);
+                    $('body').css({"background-color":"#aabbcc"});
+                }
+            });
+            $("#alarmSwitch").prop("checked", alarmState);
+            
+            
+            $("#enableStream").iphoneStyle({
+                onChange: function (elem, value) {
+                    socket.emit('enableStream', value);
+                }
+            });
+            $("#enableMorph").iphoneStyle({
+                onChange: function (elem, value) {
+                    socket.emit('enableMorph', value);
+                }
+            });
+            $("#enableContours").iphoneStyle({
+                onChange: function (elem, value) {
+                    socket.emit('enableContours', value);
+                }
+            });
+            $("#enableMask").iphoneStyle({
+                onChange: function (elem, value) {
+                    socket.emit('enableMask', value);
+                }
+            });
+            $("#varianceParam").slider({
+                orientation: "horizontal",
+        		range: "false",
+        		min: 1,
+        		max: 4,
+        		value: <%= varianceParam %>,
+        		slide: function( event, ui ) {
+        			socket.emit('varianceParam', $("#varianceParam").slider("value"));
+        			$("#varianceValue").text($("#varianceParam").slider("value"));
+        		},
+                stop:  function( event, ui ) {
+         			socket.emit('varianceParam', $("#varianceParam").slider("value"));
+         			$("#varianceValue").text($("#varianceParam").slider("value"));
+                }
+            });
+            $("#enableStream").prop("checked", <%= enableStream %>);
+            $("#enableStream").iphoneStyle("refresh");
+            $("#enableMorph").prop("checked", <%= enableMorph %>);
+            $("#enableMorph").iphoneStyle("refresh");
+            $("#enableContours").prop("checked", <%= enableContours %>);
+            $("#enableContours").iphoneStyle("refresh");
+            $("#enableMask").prop("checked", <%= enableMask %>);
+            $("#enableMask").iphoneStyle("refresh");
+            $("#varianceValue").text($("#varianceParam").slider("value"));
+        });
+        
+    </script>
+</head>
+
+<body>
+    <header>
+        <% include ../partials/header %>
+    </header>
+    <main>
+        <div class="container">
+            <div class="row">
+                <div class="span4">
+                    <img id="stream" height="480" width="640" class="center-block" src="nostream.jpg" />
+                </div>
+            </div>
+            <div class="row top-buffer">
+                <div class="col-md-2 col-md-offset-3">Stream: <input type="checkbox" id="enableStream"/></div>
+                <div class="col-md-2">Morphology PP: <input type="checkbox" id="enableMorph"/></div>
+                <div class="col-md-2">Contour finding: <input type="checkbox" id="enableContours"/></div>
+            </div>
+            <div class="row top-buffer">
+                <div class="col-md-2 col-md-offset-3">SigmaDelta mask: <input type="checkbox" id="enableMask"/></div>
+                <div class="col-md-2">Alarm: <input type="checkbox" id="alarmSwitch"/></div>
+            </div>
+            <div class="row top-buffer">
+                <div class="col-md-6 col-md-offset-3">Variance paramater (N):
+                    <div id="varianceParam"></div>
+                </div>
+            </div>
+            <div class="row top-buffer">
+                <div class="col-md-2 col-md-offset-6" id="varianceValue"></div>
+            </div>
+          
+        </div>
+    </main>
+    <footer>
+        <div class="top-buffer"></div>
+        <% include ../partials/footer %>
+    </footer>
+</body>
+</html>

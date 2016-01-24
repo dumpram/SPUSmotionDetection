@@ -1,0 +1,20 @@
+<!-- DOCTYPE html -->
+<html lang="en">
+<head>
+	<% include ../partials/head %>
+</head>
+<body>
+	<header>
+		<% include ../partials/header %>
+	</header>
+		<table>
+			<tr><td>Date</td><td>Image</td></tr>
+			<% for(var i = 0; i < motion.length; i++) {%>
+				<tr><td><%= motion[i].date %></td><td><img height="100" src="data:image/jpeg;base64,<%= motion[i].image %>" alt=""></td></tr>
+			<% } %>	
+		</table>	
+	<footer>
+		<% include ../partials/footer %>
+	</footer>
+</body>
+</html>

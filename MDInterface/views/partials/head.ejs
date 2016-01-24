@@ -1,0 +1,50 @@
+<!-- views/partials/head.ejs --> 
+
+<meta charset="UTF-8">
+<title>MDInterface</title>
+
+
+<!-- CSS (bootstrap from a CDN) -->
+<link rel="stylesheet" href="bootstrap.min.css">
+<style>
+	body {
+		background-color: #aabbcc;
+	}
+	.left {
+		float: left;
+		width: 50%;
+		text-align: center;
+	}
+	.right {
+		float: right;
+		width: 50%;
+		text-align: center;
+	}
+	.group:after {
+		content:"";
+		display: table;
+		clear: both;
+	}
+	@media screen and (max-width: 480px) {
+		.left, 
+		.right {
+		    float: none;
+		    width: auto;
+		}
+	}
+	table {
+		border-collapse: collapse;
+		width: 100%;
+	}
+
+	th, td {
+		padding: 8px;
+		text-align: left;
+		border-bottom: 1px solid #ddd;
+	}
+	.top-buffer { 
+		margin-top:20px; 
+	}
+</style>
+
+
