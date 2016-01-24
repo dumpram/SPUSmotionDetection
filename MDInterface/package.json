@@ -8,6 +8,7 @@
     "express": "^4.12.3",
     "socket.io": "*",
     "mysql" : "*",
-    "node-ipc": "*"
+    "node-ipc": "*",
+    "ejs": "*"
   }
 }
