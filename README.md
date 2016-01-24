@@ -31,3 +31,8 @@ prompt run following commands:
                         image TEXT CHARACTER SET ascii,
                         date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, 
                         PRIMARY KEY(ID));
+
+#Running 
+
+First start Node web application, then BasicSigmaDelta with camera device id
+as parameter.
