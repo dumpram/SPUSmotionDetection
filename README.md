@@ -10,6 +10,8 @@ compiled on Linux based operating systems. Additional requirements are:
 -> OpenCV 3.1 library
 -> C++ 11
 
+Note: before running make run conf.sh
+
 Tested on Debian based distributions (Debian 8.2 Jessie and Linux Mint)
 Application is made for BeagleBone Black platform.
 
