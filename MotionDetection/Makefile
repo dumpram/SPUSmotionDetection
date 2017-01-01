@@ -3,7 +3,7 @@
 # Author: Ivan Pavic <ivan.pavic2@fer.hr>
 # Date: 2016/4/1
 # Version: 0.1.0
-# ------------------------------------------------- 
+# -------------------------------------------------
 
 INCDIR = inc
 OPENCV_INC = /usr/local/include/opencv2
@@ -28,8 +28,12 @@ XOBJECTS :=  $(XSOURCES:$(XSRCDIR)/%.cpp=$(XOBJDIR)/%.o)
 rm       = rm -f
 
 
-all : $(BINDIR)/BasicSigmaDelta # $(BINDIR)/ConditionalSigmaDelta $(BINDIR)/MoGTest $(BINDIR)/Streamer
+all : $(BINDIR)/BasicSigmaDelta $(BINDIR)/SerialHelperTest #$(BINDIR)/MoGTest $(BINDIR)/Streamer
 
+
+$(BINDIR)/SerialHelperTest : $(OBJECTS) $(XOBJECTS)
+	@$(LINKER) $@ $(OBJECTS) exe_obj/SerialHelperTest.o $(LFLAGS)
+	@echo "Linking "$@" is complete!"
 
 $(BINDIR)/MoGTest : $(OBJECTS) $(XOBJECTS)
 	@$(LINKER) $@ $(OBJECTS) exe_obj/MoGTest.o $(LFLAGS)
@@ -39,6 +43,9 @@ $(BINDIR)/MoGTest : $(OBJECTS) $(XOBJECTS)
 $(BINDIR)/Streamer : $(OBJECTS) $(XOBJECTS)
 	@$(LINKER) $@ $(OBJECTS) exe_obj/Streamer.o $(LFLAGS)
 	@echo "Linking Streamer is complete!"
+
+
+
 
 $(BINDIR)/BasicSigmaDelta : $(OBJECTS) $(XOBJECTS)
 	@$(LINKER) $@ $(OBJECTS) exe_obj/BasicSigmaDelta.o $(LFLAGS)
@@ -51,7 +58,7 @@ $(BINDIR)/ConditionalSigmaDelta : $(OBJECTS) $(XOBJECTS)
 $(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.cpp
 	@$(CC) $(CFLAGS) -c $< -o $@
 	@echo "Compiled "$<" successfully!"
-	
+
 $(XOBJECTS): $(XOBJDIR)/%.o : $(XSRCDIR)/%.cpp
 	@$(CC) $(CFLAGS) -c $< -o $@
 	@echo "Compiled "$<" successfully!"
@@ -61,14 +68,9 @@ clean:
 	@$(rm) $(OBJECTS)
 	@$(rm) $(XOBJECTS)
 	@echo "Cleanup complete!"
-	
+
 
 .PHONEY: remove
 remove: clean
 	@$(rm) $(BINDIR)/*
 	@echo "Executable removed!"
-
-
-
-
-
