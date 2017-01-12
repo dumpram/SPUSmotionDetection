@@ -1,9 +1,9 @@
 /* * BasicSigmaDelta.cpp
  *
- *	Implementation of BasicSigmaDelta algorithm for motion detection. 
- * 
+ *	Implementation of BasicSigmaDelta algorithm for motion detection.
+ *
  *  Created on: Jan 18, 2016
- *  Authors: Ivan Pavić, Ivan Spasić 
+ *  Authors: Ivan Pavić, Ivan Spasić
  */
 #include <highgui.hpp>
 #include <opencv.hpp>
@@ -12,6 +12,7 @@
 #include <cmath>
 #include <chrono>
 #include <UnixIPCHelper.h>
+#include <SerialHelper.hpp>
 #include <SigmaDeltaImpl.h>
 #include <base64.h>
 #include <functional>
@@ -43,9 +44,11 @@ static bool enableMask = true;
  */
 static bool enableContours = false;
 
+static string motionDetected = "Motion detected! :D\r\n";
+
 /**
  * Function measures time elapsed for execution of given wrapper.
- */ 
+ */
 int measureTime(ProfilingWrapper wrapper, string description) {
 	high_resolution_clock::time_point startTime = high_resolution_clock::now();
 	wrapper();
@@ -64,14 +67,14 @@ void streamCallback(char *data) {
 
 /**
  * Callback for detection socket.
- */ 
+ */
 void detectionCallback(char *data) {
 	std::cout << data << std::endl;
 }
 
 /**
  * Callback for changing algorithm parameters.
- */ 
+ */
 void algorithmCallback(char *data) {
 	int recv = atoi(data);
 	cout << "Received: "<< data << endl;
@@ -85,10 +88,15 @@ void algorithmCallback(char *data) {
 		case 33: N = 3; break;
 		case 34: N = 4; break;
 		case 40: enableContours = false; break;
-		case 41: enableContours = true; 
+		case 41: enableContours = true;
 	}
 }
 
+
+void uartRxCallback(char *data, int size) {
+    string message(data, size);
+    cout << "RX got: " << message;
+}
 
 /**
  * Main function.
@@ -98,41 +106,43 @@ int main(int argc, char** argv) {
 
 	if (argc != 2) {
 		cout << "Provide camera device id as argument!" << endl;
-		return -1;	
-	}		
-	
+		return -1;
+	}
+
 	/**
 	 * Input, Mode, Variance, and Mask matrices.
 	 */
 	Mat I, M, V, E;
-	
+
 	vector<unsigned char> buff;
-	
+
 	/**
 	 * Parameters for JPEG encoding.
 	 */
 	vector<int> params = vector<int>(2);
 	params[0] = CV_IMWRITE_JPEG_QUALITY;
 	params[1] = 50;
-	
+
 	UnixIPCHelper nodeStream(string("/tmp/node_stream"), streamCallback);
 	nodeStream.bindNode();
 	nodeStream.listenNode();
-	
+
 	UnixIPCHelper nodeDetection(string("/tmp/node_detection"), detectionCallback);
 	nodeDetection.bindNode();
 	nodeDetection.listenNode();
-	
+
 	UnixIPCHelper nodeAlgorithm(string("/tmp/node_algorithm"), algorithmCallback);
 	nodeAlgorithm.bindNode();
 	nodeAlgorithm.listenNode();
-	
+
+    SerialHelper uart(string("/dev/ttyUSB0"), uartRxCallback);
+
 	VideoCapture cap(atoi(argv[1]));
 	if (!cap.isOpened()) {
 		cerr << "Err: Initalizing video capture" << endl;
 		return -1;
 	}
-	
+
 	cap.read(I);
 	cvtColor(I, I, CV_RGB2GRAY);
 
@@ -144,12 +154,12 @@ int main(int argc, char** argv) {
 	 * Element for morphological filtering.
 	 */
 	Mat morphElement = getStructuringElement( 0, Size(3, 3), Point (1, 1) );
-	
+
 	/**
 	 * Stream frame reference.
 	 */
 	Mat streamFrame;
-	
+
 	/**
 	 * Parameters and containers for edge detection.
 	 */
@@ -160,35 +170,35 @@ int main(int argc, char** argv) {
 	 * Detection flag.
 	 */
 	bool detectionFlag = false;
-	
+
 	/**
 	 * Sending dummy byte to enter setup state.
 	 */
 	nodeAlgorithm.sendNode("1");
-	
+
 	/**
 	 * Area in contours.
 	 */
 	 double area;
-	
+
 	while (1) {
 		bool captureSuccess = cap.read(I); /* read a new frame from camera feed */
-		
+
 		if (!captureSuccess) {
 			cerr << "Err: reading from camera feed" << endl;
 			break;
 		}
-		
+
 		streamFrame = (enableMask)? E : I;
-		
+
 		measureTime([&I] () {cvtColor(I, I, CV_RGB2GRAY);}, "conversion to grayscale");
-		
+
 		measureTime([&I, &M, &V, &E] () {basicSigmaDeltaBS(I, M, V, E, N);}, "sigma delta background subtraction");
 
 		if (enableMorph) {
-			measureTime([&E, &morphElement] () {morphologyEx(E, E, 2, morphElement);}, "morphology processing"); 
+			measureTime([&E, &morphElement] () {morphologyEx(E, E, 2, morphElement);}, "morphology processing");
 		}
-		
+
 		//Canny(E, canny_out, thresh, thresh * 2, 3);
 		findContours(E.clone(), contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 
@@ -202,27 +212,26 @@ int main(int argc, char** argv) {
 				drawContours(streamFrame, contours, i, color, 10, 8, hierarchy, 0, Point());
 			}
 		}
-		
+
 		if (detectionFlag) {
-			nodeDetection.sendNode("1");
+            uart.sendSerial((char *)motionDetected.c_str(), motionDetected.length());
+			//nodeDetection.sendNode("1");
 		} else {
-			nodeDetection.sendNode("0");
+			//nodeDetection.sendNode("0");
 		}
 
 		detectionFlag = false;
-		
+
 		measureTime([&streamFrame, &buff, &params] () {imencode(".jpg", streamFrame, buff, params);}, "JPEG encoding");
-		
+
 		string base64EncodedJPEG;
-		
+
 		measureTime([&base64EncodedJPEG, &buff] () {
 			base64EncodedJPEG = base64_encode(&buff[0], buff.size());
 		}, "base64 encoding");
-		
+
 		measureTime([&base64EncodedJPEG, &nodeStream] () {nodeStream.sendNode(base64EncodedJPEG.c_str());}, "sending to Unix socket");
-	
+
 	}
 	return 0;
 }
-
-
