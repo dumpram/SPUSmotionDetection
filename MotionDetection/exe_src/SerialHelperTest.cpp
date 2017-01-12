@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <signal.h>
+#include <unistd.h>
 
 using namespace std;
 
@@ -26,7 +27,9 @@ int main() {
 
     signal (SIGINT, sigIntHandler);
 
-    while(!interrupted);
+    while(!interrupted) {
+		sleep(1);
+	}
 
     tty.closeSerial();
 

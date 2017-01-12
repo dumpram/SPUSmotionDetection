@@ -29,3 +29,6 @@
 
 # Bin directory
 bin/
+
+# NodeJs modules
+MDInterface/node_modules
