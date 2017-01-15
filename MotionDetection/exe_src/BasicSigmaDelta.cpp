@@ -111,7 +111,7 @@ int main(int argc, char** argv) {
 		cout << "Provide camera device id as argument!" << endl;
 		return -1;
 	}
-
+    Ptr<BackgroundSubtractor> pMOG2 = createBackgroundSubtractorMOG2();
 	/**
 	 * Input, Mode, Variance, and Mask matrices.
 	 */
@@ -184,6 +184,8 @@ int main(int argc, char** argv) {
 	 */
 	 double area;
 
+     Point2f avgPoint = Point2f();
+
 	while (1) {
 		bool captureSuccess = cap.read(I); /* read a new frame from camera feed */
 
@@ -203,32 +205,67 @@ int main(int argc, char** argv) {
 		}
 
 		//Canny(E, canny_out, thresh, thresh * 2, 3);
+
+        //pMOG2->apply(I, E);
+
 		findContours(E.clone(), contours, hierarchy, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE, Point(0, 0));
 
-        vector<Moments> mu(contours.size() );
-        for(int i = 0; i < contours.size(); i++) {
+        vector<Moments> mu(contours.size());
+        for(unsigned int i = 0; i < contours.size(); i++) {
             mu[i] = moments(contours[i], false);
         }
-
-        ///  Get the mass centers:
-        vector<Point2f> mc(contours.size());
-        for (int i = 0; i < contours.size(); i++) {
-            mc[i] = Point2f(mu[i].m10/mu[i].m00 , mu[i].m01/mu[i].m00);
+        //  Get maximum contour area
+        double maxArea = CONTOUR_AREA_THRESH;
+        unsigned int maxAreaIndex;
+        for (unsigned int i = 0; i < contours.size(); i++) {
+            area = contourArea(contours[i]);
+            if (area > maxArea) {
+                maxArea = area;
+                maxAreaIndex = i;
+            }
         }
 
-        for(unsigned int i = 0; i < contours.size(); i++) {
-			Scalar color = Scalar(0, 255, 0);
-            Scalar dotColor = Scalar(0, 0, 255);
-			area = contourArea(contours[i]);
-			if(area > CONTOUR_AREA_THRESH) {
-				detectionFlag = true;
-			}
-			if (area > CONTOUR_AREA_THRESH && enableContours && !enableMask) {
-				drawContours(streamFrame, contours, i, color, 10, 8, hierarchy,
-                    0, Point());
-                circle(streamFrame, mc[i], 4, dotColor, -1, 8, 0 );
-            }
-		}
+        //  Get the mass centers:
+        vector<Point2f> mc(contours.size());
+
+        for (unsigned int i = 0; i < contours.size(); i++) {
+            mc[i] = Point2f(mu[i].m10/mu[i].m00 , mu[i].m01/mu[i].m00);
+            area = contours[i].size();
+            avgPoint.x = (avgPoint.x + mc[i].x);
+            avgPoint.y = (avgPoint.y + mc[i].y);
+        }
+
+        if (contours.size() > 0) {
+            avgPoint.x /= contours.size();
+            avgPoint.y /= contours.size();
+        }
+
+
+        // for(unsigned int i = 0; i < contours.size(); i++) {
+		Scalar color = Scalar(0, 255, 0);
+        Scalar dotColor = Scalar(0, 0, 255);
+		// 	area = contourArea(contours[i]);
+		// 	if(area > maxArea) {
+		// 		detectionFlag = true;
+		// 	}
+		// 	if (area > CONTOUR_AREA_THRESH && enableContours && !enableMask) {
+		// 		drawContours(streamFrame, contours, i, color, 10, 8, hierarchy,
+        //             0, Point());
+        //         circle(streamFrame, mc[i], 4, dotColor, -1, 8, 0 );
+        //     }
+		// }
+		//
+
+        Point2f center(streamFrame.cols/2, streamFrame.rows/2);
+
+        if (maxArea > CONTOUR_AREA_THRESH && enableContours && !enableMask) {
+            	drawContours(streamFrame, contours, maxAreaIndex, color, 10, 8,
+                    hierarchy, 0, Point());
+                circle(streamFrame, mc[maxAreaIndex], 4, dotColor, -1, 8, 0 );
+                line(streamFrame, center ,mc[maxAreaIndex], dotColor);
+        }
+
+        circle(streamFrame, center, 4, dotColor, - 1, 8, 0);
 
 		if (detectionFlag) {
 			snprintf(commandBuffer, 100, CMD_MESSAGE, 360, 360);

@@ -28,7 +28,7 @@ XOBJECTS :=  $(XSOURCES:$(XSRCDIR)/%.cpp=$(XOBJDIR)/%.o)
 rm       = rm -f
 
 
-all : $(BINDIR)/BasicSigmaDelta $(BINDIR)/SerialHelperTest #$(BINDIR)/MoGTest $(BINDIR)/Streamer
+all : $(BINDIR)/BasicSigmaDelta $(BINDIR)/SerialHelperTest $(BINDIR)/MoGTest #$(BINDIR)/Streamer
 
 
 $(BINDIR)/SerialHelperTest : $(OBJECTS) $(XOBJECTS)
