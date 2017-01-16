@@ -18,7 +18,11 @@
 #include <functional>
 
 #define CONTOUR_AREA_THRESH 200
+
+#define MAX_ANGLE 35
+
 #define CMD_MESSAGE "{\"x_offset\":%d, \"y_offset\":%d}\r\n"
+
 
 using namespace std;
 using namespace cv;
@@ -99,6 +103,11 @@ void algorithmCallback(char *data) {
 void uartRxCallback(char *data, int size) {
     string message(data, size);
     cout << "RX got: " << message;
+}
+
+int getAngle(double x, double xref, double xmax) {
+    double alfa = atan(((x - xref) / (xmax - xref) * tan(MAX_ANGLE)));
+    return (int) (alfa * 180.0 / 3.14159);
 }
 
 /**
@@ -184,7 +193,7 @@ int main(int argc, char** argv) {
 	 */
 	 double area;
 
-     Point2f avgPoint = Point2f();
+
 
 	while (1) {
 		bool captureSuccess = cap.read(I); /* read a new frame from camera feed */
@@ -228,6 +237,8 @@ int main(int argc, char** argv) {
         //  Get the mass centers:
         vector<Point2f> mc(contours.size());
 
+        Point2f avgPoint = Point2f();
+
         for (unsigned int i = 0; i < contours.size(); i++) {
             mc[i] = Point2f(mu[i].m10/mu[i].m00 , mu[i].m01/mu[i].m00);
             area = contours[i].size();
@@ -245,9 +256,9 @@ int main(int argc, char** argv) {
 		Scalar color = Scalar(0, 255, 0);
         Scalar dotColor = Scalar(0, 0, 255);
 		// 	area = contourArea(contours[i]);
-		// 	if(area > maxArea) {
-		// 		detectionFlag = true;
-		// 	}
+			// if(area > maxArea) {
+			// 	detectionFlag = true;
+			// }
 		// 	if (area > CONTOUR_AREA_THRESH && enableContours && !enableMask) {
 		// 		drawContours(streamFrame, contours, i, color, 10, 8, hierarchy,
         //             0, Point());
@@ -262,14 +273,24 @@ int main(int argc, char** argv) {
             	drawContours(streamFrame, contours, maxAreaIndex, color, 10, 8,
                     hierarchy, 0, Point());
                 circle(streamFrame, mc[maxAreaIndex], 4, dotColor, -1, 8, 0 );
-                line(streamFrame, center ,mc[maxAreaIndex], dotColor);
+                line(streamFrame, center , mc[maxAreaIndex], dotColor);
         }
 
         circle(streamFrame, center, 4, dotColor, - 1, 8, 0);
 
-		if (detectionFlag) {
-			snprintf(commandBuffer, 100, CMD_MESSAGE, 360, 360);
+
+
+
+		if (maxArea > CONTOUR_AREA_THRESH) {
+            double x = mc[maxAreaIndex].x;
+            double y = mc[maxAreaIndex].y;
+            double xref = streamFrame.cols / 2;
+            double yref = streamFrame.rows / 2;
+            int xalfa = getAngle(x, xref, xref * 2);
+            int yalfa = getAngle(y, yref, yref * 2);
+			snprintf(commandBuffer, 100, CMD_MESSAGE, xalfa, yalfa);
             uart.sendSerial(commandBuffer, strlen(commandBuffer));
+            printf("%s", commandBuffer);
 		} else {
 
 		}
