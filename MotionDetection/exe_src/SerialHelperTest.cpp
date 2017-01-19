@@ -20,7 +20,7 @@ void callback(char *data, int size) {
 }
 
 int main() {
-    string message = "This is message from hell!\r\n";
+    string message = "{\"x_offset\": 0, \"y_offset\": 25}\n";
     SerialHelper tty("/dev/ttyUSB0", callback);
     tty.sendSerial((char *)message.c_str(), message.length());
     cout << message.length() << endl;

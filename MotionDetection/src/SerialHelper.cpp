@@ -10,7 +10,7 @@
 #include <iostream>
 
 
-#define DEFAULT_BAUDRATE B115200
+#define DEFAULT_BAUDRATE B9600
 
 SerialHelper::SerialHelper(std::string serialPath,
     void (*callback)(char *, int)) {
@@ -37,8 +37,8 @@ void SerialHelper::configureSerialPort() {
     }
     tcgetattr(serialFileDescriptor, &oldConfiguration);
     tcgetattr(serialFileDescriptor, &newConfiguration);
-    cfsetispeed(&newConfiguration, B115200);
-    cfsetospeed(&newConfiguration, B115200);
+    cfsetispeed(&newConfiguration, DEFAULT_BAUDRATE);
+    cfsetospeed(&newConfiguration, DEFAULT_BAUDRATE);
     newConfiguration.c_cflag |= (CLOCAL | CREAD);
     newConfiguration.c_lflag |= ICANON;
     tcsetattr(serialFileDescriptor, TCSANOW, &newConfiguration);
